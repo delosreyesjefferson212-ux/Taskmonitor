@@ -140,10 +140,9 @@
     <textarea id="taskDesc" rows="2" placeholder="Task instructions or notes (optional)..."></textarea>
     <label style="font-size:0.85rem; font-weight:600;">Deadline Date & Time:</label>
     <input type="datetime-local" id="taskDeadline" required>
-    <div class="row">
-        <button id="saveBtn" style="width:100%;" onclick="saveTask()">+ Save Task</button>
-        <button id="cancelEditBtn" style="background:#64748b; display:none;" onclick="resetForm()">Cancel</button>
-    </div>
+<button type="button" id="saveBtn" style="width:100%; margin-bottom:8px;" onclick="saveTask()">+ Save Task</button>
+<button type="button" id="cancelEditBtn" style="width:100%; background:#64748b; display:none;" onclick="resetForm()">Cancel</button>
+    
 </div>
 
 <div class="filters">
