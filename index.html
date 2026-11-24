@@ -35,25 +35,22 @@ input,select,textarea{width:100%;padding:.5rem;border:1px solid #cbd5e1;border-r
 <header>
   <h2>Academic Task & Deadline Monitor</h2>
   <small>Beleng National High School • SHS Tracker</small><br>
-  <button id="notifBtn" class="btn-notif" onclick="enableNotif()">🔔 Enable Deadline Alerts</button>
+  <button id="notifBtn" class="btn-notif" onclick="enableNotif()">🔔 Enable Lock Screen Alerts</button>
 </header>
 
 <div class="wrap">
   <div id="alertBanner" class="alert-box"></div>
-
   <div class="box g3">
     <div><label>Student Name</label><input id="sName" placeholder="Your Name"></div>
     <div><label>Grade</label><select id="sGrade"><option>Grade 11</option><option>Grade 12</option></select></div>
     <div><label>Strand</label><select id="sStrand"><option>ICT</option><option>HUMSS</option><option>HE</option></select></div>
   </div>
-
   <div class="stats">
     <div class="stat"><h3 id="cAll">0</h3><small>TOTAL</small></div>
     <div class="stat" style="color:#d97706"><h3 id="cUp">0</h3><small>UPCOMING</small></div>
     <div class="stat" style="color:#dc2626"><h3 id="cOv">0</h3><small>OVERDUE</small></div>
     <div class="stat" style="color:#16a34a"><h3 id="cOk">0</h3><small>COMPLETED</small></div>
   </div>
-
   <div class="box">
     <div style="display:flex;justify-content:space-between;margin-bottom:.7rem">
       <strong id="fHead">Record New Academic Task</strong>
@@ -71,30 +68,42 @@ input,select,textarea{width:100%;padding:.5rem;border:1px solid #cbd5e1;border-r
       <button class="btn" id="sBtn">+ Add Task</button>
     </form>
   </div>
-
   <div class="box g3">
     <input id="q" placeholder="Search...">
     <select id="fs"><option value="all">All Status</option><option value="upcoming">Upcoming</option><option value="overdue">Overdue</option><option value="completed">Completed</option></select>
     <select id="fsub"><option value="all">All Subjects</option></select>
   </div>
-
   <div id="list"></div>
 </div>
 
 <script>
-let tasks=JSON.parse(localStorage.getItem('bn_t')||'[]');
+let tasks=JSON.parse(localStorage.getItem('bn_t')||'[]'),swReg=null;
 const $=id=>document.getElementById(id);
 const st=t=>t.done?'completed':(new Date(t.d)<new Date()?'overdue':'upcoming');
 const save=()=>{localStorage.setItem('bn_t',JSON.stringify(tasks));draw();};
 
-function beep(){
-  try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=800;o.start();o.stop(c.currentTime+.25);}catch(e){}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(r=>swReg=r).catch(()=>{});
+}
+
+function showPush(title,body){
+  if(!("Notification" in window)||Notification.permission!=='granted')return;
+  if(swReg&&swReg.showNotification){
+    swReg.showNotification(title,{body,vibrate:[300,100,300],requireInteraction:true,tag:'bn-due'});
+  }else{
+    try{new Notification(title,{body});}catch(e){}
+  }
 }
 
 function enableNotif(){
-  if(!("Notification" in window))return alert("Browser does not support pop-up alerts, but on-screen alerts are active!");
+  if(!("Notification" in window))return alert("Browser does not support system alerts.");
   Notification.requestPermission().then(p=>{
-    if(p==='granted'){$('notifBtn').textContent='✅ Alerts Active';beep();new Notification('Deadline Alerts Enabled!',{body:'You will be notified when tasks are due.'});}
+    if(p==='granted'){
+      $('notifBtn').textContent='✅ Lock Screen Alerts Active';
+      showPush('Deadline Alerts Active!','Notifications will appear on your status bar & lock screen.');
+    }else{
+      alert('Please allow notifications in Chrome Site Settings (lock icon beside URL).');
+    }
   });
 }
 
@@ -110,10 +119,10 @@ function checkAlerts(){
   tasks.forEach(t=>{
     if(t.done)return;
     const diff=new Date(t.d)-now;
-    if(diff<=864e5)urgent.push(`${t.title} (${t.s})`);
+    if(diff<=864e5)urgent.push(`${t.t} (${t.s})`);
     if(diff<=0 && !t.notified){
-      t.notified=true;localStorage.setItem('bn_t',JSON.stringify(tasks));beep();
-      if("Notification" in window && Notification.permission==='granted')new Notification('⏰ Deadline Reached!',{body:`${t.title} (${t.s}) is now due!`});
+      t.notified=true;localStorage.setItem('bn_t',JSON.stringify(tasks));
+      showPush('⏰ Academic Deadline Reached!',`${t.t} (${t.s}) is now due!`);
     }
   });
   const b=$('alertBanner');
@@ -132,7 +141,7 @@ $('f').onsubmit=e=>{
 const tog=id=>{tasks=tasks.map(x=>x.id===id?{...x,done:!x.done}:x);save();};
 const del=id=>{if(confirm('Delete?')){tasks=tasks.filter(x=>x.id!==id);save();}};
 const ed=id=>{const x=tasks.find(a=>a.id===id);$('eid').value=x.id;$('tT').value=x.t;$('tS').value=x.s;$('tD').value=x.d;$('tY').value=x.y;$('tN').value=x.n;$('fHead').textContent='Edit Task';$('sBtn').textContent='Update';};
-const sample=()=>{const d=m=>new Date(Date.now()+m*6e4).toISOString().slice(0,16);tasks.push({id:Date.now()+1,t:'Quick Alert Demo',s:'Empowerment Tech',d:d(1),y:'Assignment',n:'Triggers alert in 1 minute!',done:false,notified:false},{id:Date.now()+2,t:'Chapter 1 Draft',s:'Practical Research 2',d:d(1440),y:'Project',n:'Print 3 copies',done:false,notified:false});save();};
+const sample=()=>{const d=m=>new Date(Date.now()+m*6e4).toISOString().slice(0,16);tasks.push({id:Date.now()+1,t:'Quick Alert Demo',s:'Empowerment Tech',d:d(1),y:'Assignment',n:'Locks screen test (1 min)',done:false,notified:false});save();};
 
 function draw(){
   const q=$('q').value.toLowerCase(),fs=$('fs').value,fsub=$('fsub').value;
@@ -145,9 +154,9 @@ function draw(){
   checkAlerts();
 }
 
-['q','fs','fSubj','fsub'].forEach(k=>$(k)&&$(k).addEventListener('input',draw));
-if("Notification" in window && Notification.permission==='granted')$('notifBtn').textContent='✅ Alerts Active';
-setInterval(draw,30000);
+['q','fs','fsub'].forEach(k=>$(k).addEventListener('input',draw));
+if("Notification" in window && Notification.permission==='granted')$('notifBtn').textContent='✅ Lock Screen Alerts Active';
+setInterval(draw,15000);
 draw();
 </script>
 </body>
