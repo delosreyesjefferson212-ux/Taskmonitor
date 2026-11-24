@@ -1,3 +1,13 @@
-self.addEventListener('install', () => self.skipWaiting());
+const CACHE = 'bn-task-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json'])));
+  self.skipWaiting();
+});
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('notificationclick', e => { e.notification.close(); e.waitUntil(clients.openWindow('/')); });
+self.addEventListener('fetch', e => {
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow('./index.html'));
+});
