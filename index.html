@@ -8,11 +8,11 @@
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
-            --bg: #f8fafc;
+            --bg: #f1f5f9;
             --card-bg: #ffffff;
             --text: #1e293b;
             --text-muted: #64748b;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
             --danger: #dc2626;
             --danger-bg: #fef2f2;
             --warning: #d97706;
@@ -32,87 +32,117 @@
             background-color: var(--bg);
             color: var(--text);
             line-height: 1.5;
-            padding-bottom: 3rem;
+            padding-bottom: 4rem;
         }
 
         header {
-            background-color: var(--primary);
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
             color: white;
             padding: 1.5rem 1rem;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         }
 
         header h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin-bottom: 0.25rem;
         }
 
         header p {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             opacity: 0.9;
         }
 
         .container {
-            max-width: 900px;
-            margin: 1.5rem auto;
+            max-width: 850px;
+            margin: 1.25rem auto;
             padding: 0 1rem;
+        }
+
+        /* Student Profile Bar */
+        .profile-bar {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.25rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 0.75rem;
+            align-items: end;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         /* Summary Dashboard Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+
+        @media (min-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         .stat-card {
             background: var(--card-bg);
             padding: 1rem;
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
 
         .stat-card h3 {
             font-size: 1.75rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
         }
 
         .stat-card span {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .stat-overdue h3 { color: var(--danger); }
         .stat-upcoming h3 { color: var(--warning); }
         .stat-completed h3 { color: var(--success); }
 
-        /* Task Input Form */
+        /* Cards & Forms */
         .card {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 8px;
+            padding: 1.25rem;
+            border-radius: 10px;
             border: 1px solid var(--border);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .card h2 {
-            font-size: 1.15rem;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.65rem;
             margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .card-header h2 {
+            font-size: 1.1rem;
+            color: var(--text);
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 0.85rem;
         }
 
         .form-group {
@@ -125,22 +155,31 @@
         }
 
         label {
-            font-size: 0.875rem;
+            font-size: 0.82rem;
             font-weight: 600;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.3rem;
+            color: #334155;
         }
 
         input, select, textarea {
             padding: 0.6rem;
             border: 1px solid var(--border);
             border-radius: 6px;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             width: 100%;
+            background: #fff;
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
         }
 
         button.btn-primary {
@@ -148,32 +187,34 @@
             color: white;
             border: none;
             padding: 0.75rem 1.25rem;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
-            margin-top: 1rem;
-            width: 100%;
-            transition: background 0.2s;
+            flex: 1;
         }
 
         button.btn-primary:hover {
             background-color: var(--primary-dark);
         }
 
-        /* Filters */
-        .filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            align-items: center;
+        button.btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+            border: none;
+            padding: 0.5rem 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
-        .filters select {
-            width: auto;
-            min-width: 160px;
-            background: white;
+        /* Search & Filters */
+        .controls-bar {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 0.65rem;
+            margin-bottom: 1rem;
         }
 
         /* Task List */
@@ -192,7 +233,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 1rem;
+            gap: 0.85rem;
             flex-wrap: wrap;
         }
 
@@ -207,18 +248,18 @@
 
         .task-item.completed {
             border-left-color: var(--success);
-            opacity: 0.75;
+            opacity: 0.78;
         }
 
         .task-info {
             flex: 1;
-            min-width: 220px;
+            min-width: 210px;
         }
 
         .task-header {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.45rem;
             flex-wrap: wrap;
             margin-bottom: 0.35rem;
         }
@@ -254,25 +295,26 @@
         }
 
         .task-desc {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.45rem;
         }
 
         .task-deadline {
-            font-size: 0.85rem;
+            font-size: 0.83rem;
             font-weight: 600;
+            color: #334155;
         }
 
         .task-actions {
             display: flex;
-            gap: 0.5rem;
-            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
         }
 
         .btn-sm {
-            padding: 0.45rem 0.75rem;
-            font-size: 0.85rem;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.8rem;
             border-radius: 5px;
             border: 1px solid var(--border);
             cursor: pointer;
@@ -280,41 +322,35 @@
             background: white;
         }
 
-        .btn-complete {
-            color: var(--success);
-            border-color: var(--success);
-        }
+        .btn-complete { color: var(--success); border-color: var(--success); }
+        .btn-complete:hover { background: var(--success); color: white; }
 
-        .btn-complete:hover {
-            background: var(--success);
-            color: white;
-        }
+        .btn-edit { color: var(--primary); border-color: var(--primary); }
+        .btn-edit:hover { background: var(--primary); color: white; }
 
-        .btn-delete {
-            color: var(--danger);
-            border-color: var(--danger);
-        }
-
-        .btn-delete:hover {
-            background: var(--danger);
-            color: white;
-        }
+        .btn-delete { color: var(--danger); border-color: var(--danger); }
+        .btn-delete:hover { background: var(--danger); color: white; }
 
         .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 2rem 1rem;
             color: var(--text-muted);
             background: white;
             border-radius: 8px;
             border: 1px dashed var(--border);
         }
 
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2rem;
+            padding: 0 1rem;
+        }
+
         @media (max-width: 600px) {
-            .form-grid {
+            .profile-bar, .form-grid, .controls-bar {
                 grid-template-columns: 1fr;
-            }
-            .filters select {
-                width: 100%;
             }
         }
     </style>
@@ -327,43 +363,13 @@
 </header>
 
 <div class="container">
-    <!-- Summary Statistics -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <h3 id="totalCount">0</h3>
-            <span>Total Tasks</span>
+    <!-- Student Profile Section -->
+    <div class="profile-bar">
+        <div class="form-group">
+            <label for="studentName">Student Name</label>
+            <input type="text" id="studentName" placeholder="Enter your name">
         </div>
-        <div class="stat-card stat-upcoming">
-            <h3 id="upcomingCount">0</h3>
-            <span>Upcoming</span>
-        </div>
-        <div class="stat-card stat-overdue">
-            <h3 id="overdueCount">0</h3>
-            <span>Overdue</span>
-        </div>
-        <div class="stat-card stat-completed">
-            <h3 id="completedCount">0</h3>
-            <span>Completed</span>
-        </div>
-    </div>
-
-    <!-- Add Academic Task Form -->
-    <div class="card">
-        <h2>Record New Academic Task</h2>
-        <form id="taskForm">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="taskTitle">Task Title *</label>
-                    <input type="text" id="taskTitle" placeholder="e.g., Research Chapter 1 Draft" required>
-                </div>
-                <div class="form-group">
-                    <label for="taskSubject">Subject *</label>
-                    <input type="text" id="taskSubject" list="subjectSuggestions" placeholder="e.g., Practical Research 2" required>
-                    <datalist id="subjectSuggestions">
-                        <option value="Practical Research 2">
-                        <option value="Empowerment Technologies">
-                        <option value="Media and Information Literacy">
-                        <option value="21st Century Literature">
-                        <option value="Understanding Culture, Society and Politics">
-                        <option value="Computer Systems Servicing (ICT)">
-          
+        <div class="form-group">
+            <label for="studentGrade">Grade Level</label>
+            <select id="studentGrade">
+                
