@@ -6,6 +6,10 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
+self.addEventListener('fetch', (event) => {
+    // Kailangan ito ng Chrome Android para payagan ang PWA Install
+});
+
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     event.waitUntil(
@@ -13,7 +17,7 @@ self.addEventListener('notificationclick', (event) => {
             if (clientList.length > 0) {
                 return clientList.focus();
             }
-            return clients.openWindow('./index.html');
+            return clients.openWindow('/Taskmonitor/');
         })
     );
 });
