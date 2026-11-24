@@ -127,13 +127,11 @@
     <p style="margin:4px 0; font-size:14px; color:#64748b;">Beleng National High School - Senior High School</p>
   </header>
 
-  <!-- Notification Permission Bar -->
   <div class="notif-banner" id="notifBar">
     <span>🔔 I-on ang notifications para sa lockscreen alerts.</span>
     <button class="btn-notif" onclick="requestNotifPermission()">Enable Alerts</button>
   </div>
 
-  <!-- Add Task Form -->
   <div class="card">
     <h3 style="margin-top:0;">Add New Academic Task</h3>
     <form id="taskForm" class="form-grid">
@@ -165,7 +163,6 @@
     </form>
   </div>
 
-  <!-- Filter Section -->
   <div class="filters">
     <select id="filterStatus" onchange="renderTasks()">
       <option value="ALL">All Tasks</option>
@@ -176,14 +173,12 @@
     <input type="text" id="searchSubject" placeholder="Filter by Subject..." onkeyup="renderTasks()">
   </div>
 
-  <!-- Task List -->
   <div id="taskList"></div>
 </div>
 
 <script>
   let tasks = JSON.parse(localStorage.getItem('shsTasks')) || [];
 
-  // Register inline Service Worker para gumana ang mobile system notifications
   if ('serviceWorker' in navigator) {
     const swCode = `
       self.addEventListener('install', () => self.skipWaiting());
@@ -196,7 +191,7 @@
   function updateNotifBanner() {
     const bar = document.getElementById('notifBar');
     if (!('Notification' in window)) {
-      bar.style.display = 'none';
+      bar.innerHTML = '<span>⚠️ Buksan sa Chrome/Safari browser para gumana ang alerts.</span>';
     } else if (Notification.permission === 'granted') {
       bar.innerHTML = '<span>✅ Naka-on na ang Lockscreen & Status Bar Alerts.</span><button class="btn-notif" onclick="testNotification()">Test Alert</button>';
     }
@@ -235,7 +230,6 @@
     }
   }
 
-  // Mag-check ng deadlines bawat 15 segundo
   setInterval(() => {
     const now = new Date();
     let updated = false;
@@ -299,6 +293,7 @@
 
   function formatDateTime(dtString) {
     const date = new Date(dtString);
+    if (isNaN(date)) return dtString;
     return date.toLocaleString('en-PH', {
       month: 'short', day: 'numeric', year: 'numeric',
       hour: 'numeric', minute: '2-digit', hour12: true
@@ -325,4 +320,9 @@
     });
 
     if (filtered.length === 0) {
+      taskList.innerHTML = '<p style="text-align:center; color:#64748b;">No academic tasks found.</p>';
+      return;
+    }
+
+    filtered.forEach(task => {
   
