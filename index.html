@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
   <title>Academic Task & Deadline Monitoring System</title>
   <style>
     :root {
@@ -22,7 +23,30 @@
       padding: 16px;
     }
     .container { max-width: 800px; margin: auto; }
-    header { text-align: center; margin-bottom: 20px; }
+    header { text-align: center; margin-bottom: 16px; }
+    .notif-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .btn-notif {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      width: auto;
+      white-space: nowrap;
+      cursor: pointer;
+    }
     .card {
       background: var(--card);
       padding: 18px;
@@ -36,6 +60,7 @@
       gap: 12px;
     }
     .full-width { grid-column: span 2; }
+    label { font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px; }
     input, select, textarea, button {
       width: 100%;
       padding: 10px;
@@ -55,7 +80,6 @@
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
-      flex-wrap: wrap;
     }
     .task-item {
       border-left: 5px solid var(--primary);
@@ -100,25 +124,48 @@
 <div class="container">
   <header>
     <h2>Academic Task & Deadline Monitoring System</h2>
-    <p>Beleng National High School - Senior High School</p>
+    <p style="margin:4px 0; font-size:14px; color:#64748b;">Beleng National High School - Senior High School</p>
   </header>
 
+  <!-- Notification Permission Bar -->
+  <div class="notif-banner" id="notifBar">
+    <span>🔔 I-on ang notifications para sa lockscreen alerts.</span>
+    <button class="btn-notif" onclick="requestNotifPermission()">Enable Alerts</button>
+  </div>
+
+  <!-- Add Task Form -->
   <div class="card">
-    <h3>Add New Academic Task</h3>
+    <h3 style="margin-top:0;">Add New Academic Task</h3>
     <form id="taskForm" class="form-grid">
-      <input type="text" id="taskTitle" placeholder="Task Title (e.g., Research Chapter 1)" required>
-      <input type="text" id="subject" placeholder="Subject (e.g., Practical Research 2)" required>
-      <input type="date" id="deadline" required>
-      <select id="strand">
-        <option value="ICT">ICT Strand</option>
-        <option value="HUMSS">HUMSS Strand</option>
-        <option value="HE">HE Strand</option>
-      </select>
-      <textarea id="description" class="full-width" rows="2" placeholder="Task Description / Instructions..."></textarea>
+      <div>
+        <label>Task Title</label>
+        <input type="text" id="taskTitle" placeholder="e.g., Research Chapter 1" required>
+      </div>
+      <div>
+        <label>Subject</label>
+        <input type="text" id="subject" placeholder="e.g., Practical Research 2" required>
+      </div>
+      <div>
+        <label>Deadline Date & Time</label>
+        <input type="datetime-local" id="deadline" required>
+      </div>
+      <div>
+        <label>SHS Strand</label>
+        <select id="strand">
+          <option value="ICT">ICT Strand</option>
+          <option value="HUMSS">HUMSS Strand</option>
+          <option value="HE">HE Strand</option>
+        </select>
+      </div>
+      <div class="full-width">
+        <label>Description / Notes</label>
+        <textarea id="description" rows="2" placeholder="Task instructions..."></textarea>
+      </div>
       <button type="submit" class="btn-save full-width">Save Task</button>
     </form>
   </div>
 
+  <!-- Filter Section -->
   <div class="filters">
     <select id="filterStatus" onchange="renderTasks()">
       <option value="ALL">All Tasks</option>
@@ -129,11 +176,89 @@
     <input type="text" id="searchSubject" placeholder="Filter by Subject..." onkeyup="renderTasks()">
   </div>
 
+  <!-- Task List -->
   <div id="taskList"></div>
 </div>
 
 <script>
   let tasks = JSON.parse(localStorage.getItem('shsTasks')) || [];
+
+  // Register inline Service Worker para gumana ang mobile system notifications
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      self.addEventListener('install', () => self.skipWaiting());
+      self.addEventListener('activate', () => self.clients.claim());
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+  }
+
+  function updateNotifBanner() {
+    const bar = document.getElementById('notifBar');
+    if (!('Notification' in window)) {
+      bar.style.display = 'none';
+    } else if (Notification.permission === 'granted') {
+      bar.innerHTML = '<span>✅ Naka-on na ang Lockscreen & Status Bar Alerts.</span><button class="btn-notif" onclick="testNotification()">Test Alert</button>';
+    }
+  }
+
+  function requestNotifPermission() {
+    if (!('Notification' in window)) {
+      alert('Hindi suportado ng browser na ito ang notifications.');
+      return;
+    }
+    Notification.requestPermission().then(permission => {
+      updateNotifBanner();
+      if (permission === 'granted') {
+        sendSystemNotification('Alerts Enabled!', 'Makakatanggap ka na ng notification pagsapit ng deadline.');
+      }
+    });
+  }
+
+  function testNotification() {
+    sendSystemNotification('Test Deadline Alert', 'Ganito lalabas ang reminder sa notification bar at lockscreen mo.');
+  }
+
+  function sendSystemNotification(title, body) {
+    if (Notification.permission === 'granted') {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, {
+            body: body,
+            vibrate:,
+            tag: 'task-deadline'
+          });
+        });
+      } else {
+        new Notification(title, { body: body });
+      }
+    }
+  }
+
+  // Mag-check ng deadlines bawat 15 segundo
+  setInterval(() => {
+    const now = new Date();
+    let updated = false;
+
+    tasks.forEach(task => {
+      if (!task.completed && !task.notified) {
+        const dueDate = new Date(task.deadline);
+        if (now >= dueDate) {
+          sendSystemNotification(
+            `⏰ Deadline Reached: ${task.title}`,
+            `Subject: ${task.subject} (${task.strand}) - Due now!`
+          );
+          task.notified = true;
+          updated = true;
+        }
+      }
+    });
+
+    if (updated) {
+      localStorage.setItem('shsTasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+  }, 15000);
 
   document.getElementById('taskForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -145,13 +270,14 @@
       deadline: document.getElementById('deadline').value,
       strand: document.getElementById('strand').value,
       description: document.getElementById('description').value,
-      completed: false
+      completed: false,
+      notified: false
     };
 
     tasks.push(newTask);
     saveAndRender();
     this.reset();
-    alert('Task saved successfully!');
+    alert('Task saved with deadline alert!');
   });
 
   function toggleStatus(id) {
@@ -171,16 +297,24 @@
     renderTasks();
   }
 
+  function formatDateTime(dtString) {
+    const date = new Date(dtString);
+    return date.toLocaleString('en-PH', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    });
+  }
+
   function renderTasks() {
     const taskList = document.getElementById('taskList');
     const filterStatus = document.getElementById('filterStatus').value;
     const searchSubject = document.getElementById('searchSubject').value.toLowerCase();
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
 
     taskList.innerHTML = '';
 
     const filtered = tasks.filter(task => {
-      const isOverdue = !task.completed && task.deadline < today;
+      const isOverdue = !task.completed && new Date(task.deadline) < now;
       const matchesSubject = task.subject.toLowerCase().includes(searchSubject);
 
       if (!matchesSubject) return false;
@@ -191,51 +325,4 @@
     });
 
     if (filtered.length === 0) {
-      taskList.innerHTML = '<p style="text-align:center; color:#64748b;">No academic tasks found.</p>';
-      return;
-    }
-
-    filtered.forEach(task => {
-      const isOverdue = !task.completed && task.deadline < today;
-      let statusLabel = 'Upcoming';
-      let badgeClass = 'bg-upcoming';
-      let itemClass = '';
-
-      if (task.completed) {
-        statusLabel = 'Completed';
-        badgeClass = 'bg-completed';
-        itemClass = 'completed';
-      } else if (isOverdue) {
-        statusLabel = 'Overdue';
-        badgeClass = 'bg-overdue';
-        itemClass = 'overdue';
-      }
-
-      taskList.innerHTML += `
-        <div class="task-item ${itemClass}">
-          <div>
-            <strong>${task.title}</strong> <span class="badge ${badgeClass}">${statusLabel}</span>
-            <div style="font-size:13px; color:#475569; margin-top:4px;">
-              Subject: <b>${task.subject}</b> (${task.strand}) | Due: <b>${task.deadline}</b>
-            </div>
-            <p style="font-size:13px; margin:6px 0 0;">${task.description}</p>
-          </div>
-          <div class="actions">
-            <button onclick="toggleStatus(${task.id})" style="background:#e2e8f0; border:none;">
-              ${task.completed ? 'Mark Pending' : 'Mark Completed'}
-            </button>
-            <button onclick="deleteTask(${task.id})" style="background:#fee2e2; color:#dc2626; border:none;">
-              Delete
-            </button>
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  renderTasks();
-</script>
-
-</body>
-  </html>
-        
+  
