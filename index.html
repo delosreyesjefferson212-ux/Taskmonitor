@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic Task & Deadline Monitor — Beleng NHS</title>
+  <meta name="theme-color" content="#1a66e5" />
+  <link rel="manifest" id="manifest-placeholder" />
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background-color: #f3f5f9; color: #1e293b; padding: 16px; }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background-color: #1a66e5;
+      color: white;
+      padding: 24px 16px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(26, 102, 229, 0.2);
+    }
+    .header h1 { margin: 0 0 6px; font-size: 21px; line-height: 1.25; }
+    .header p { margin: 0; font-size: 13px; opacity: 0.92; }
+
+    /* Alert Bar */
+    .alert-bar {
+      background: #e8eef7;
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 0;
+      font-size: 13px;
+      gap: 10px;
+    }
+    .btn-primary {
+      background: #1a66e5;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #1554be; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 500px) {
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat-card {
+      background: white;
+      padding: 16px 10px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      border-top: 4px solid #ccc;
+    }
+    .stat-card.blue { border-top-color: #1a66e5; }
+    .stat-card.orange { border-top-color: #f59e0b; }
+    .stat-card.red { border-top-color: #ef4444; }
+    .stat-card.green { border-top-color: #10b981; }
+    .stat-number { font-size: 26px; font-weight: bold; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: #64748b; font-weight: 500; }
+
+    /* Cards & Form */
+    .card {
+      background: white;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      margin-bottom: 16px;
+    }
+    .card h3 { margin: 0 0 12px; font-size: 16px; color: #1a66e5; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 60px; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Filters */
+    .filter-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    /* Task Items */
+    .task-item {
+      background: white;
+      padding: 14px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+      border-left: 5px solid #1a66e5;
+    }
+    .task-item.overdue { border-left-color: #ef4444; }
+    .task-item.upcoming { border-left-color: #f59e0b; }
+    .task-item.completed { border-left-color: #10b981; opacity: 0.75; }
+
+    .task-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .task-title { margin: 0; font-size: 15px; font-weight: 700; }
+    .completed .task-title { text-decoration: line-through; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin-top: 4px;
+      margin-right: 4px;
+    }
+    .badge-subject { background: #e0e7ff; color: #1e40af; }
+    .badge-strand { background: #f1f5f9; color: #334155; }
+    .badge-status-upcoming { background: #fef3c7; color: #92400e; }
+    .badge-status-overdue { background: #fee2e2; color: #991b1b; }
+    .badge-status-completed { background: #dcfce7; color: #166534; }
+
+    .task-desc { margin: 8px 0; font-size: 13px; color: #475569; }
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .actions button {
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    .btn-toggle { background: #dcfce7; color: #166534; }
+    .btn-undo { background: #fef3c7; color: #92400e; }
+    .btn-del { background: #fee2e2; color: #991b1b; }
+    .empty-state { text-align: center; padding: 24px; color: #64748b; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header Banner -->
+  <div class="header">
+    <h1>Academic Task & Deadline Monitor</h1>
+    <p>Beleng National High School — Senior High School<br>(ICT • HUMSS • HE)</p>
+  </div>
+
+  <!-- Deadline Notification Bar -->
+  <div class="alert-bar">
+    <span>⚠️ Enable phone deadline alerts</span>
+    <button class="btn-primary" onclick="enableAlerts()">Enable Alerts</button>
+  </div>
+
+  <!-- Summary Counters -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-number" id="totalCount">0</div>
+      <div class="stat-label">Total Tasks</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-number" id="upcomingCount">0</div>
+      <div class="stat-label">Upcoming</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-number" id="overdueCount">0</div>
+      <div class="stat-label">Overdue</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-number" id="completedCount">0</div>
+      <div class="stat-label">Completed</div>
+    </div>
+  </div>
+
+  <!-- Add New Academic Task Form -->
+  <div class="card">
+    <h3>+ Add New Academic Task</h3>
+    <label for="taskTitle">Task Title *</label>
+    <input type="text" id="taskTitle" placeholder="e.g., Research Chapter 1-3 Defense" />
+
+    <div class="row-2">
+      <div>
+        <label for="taskSubject">Subject *</label>
+        <input type="text" id="taskSubject" placeholder="e.g., Practical Research 2" />
+      </div>
+      <div>
+        <label for="taskStrand">SHS Strand</label>
+        <select id="taskStrand">
+          <option value="ICT">ICT</option>
+          <option value="HUMSS">HUMSS</option>
+          <option value="HE">HE</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="taskDesc">Task Description (Optional)</label>
+    <textarea id="taskDesc" placeholder="Enter instructions, materials needed, or reminders..."></textarea>
+
+    <label for="taskDeadline">Submission Deadline *</label>
+    <input type="datetime-local" id="taskDeadline" />
+
+    <button class="btn-primary" style="width: 100%;" onclick="addTask()">Save Academic Task</button>
+  </div>
+
+  <!-- Organize & Filter Section -->
+  <div class="card">
+    <h3>Filter & Monitor Tasks</h3>
+    <div class="filter-bar">
+      <div>
+        <label for="filterSubject">Filter by Subject</label>
+        <select id="filterSubject" onchange="renderTasks()">
+          <option value="ALL">All Subjects</option>
+        </select>
+      </div>
+      <div>
+        <label for="filterStatus">Filter by Status</label>
+        <select id="filterStatus" onchange="renderTasks()">
+          <option value="ALL">All Tasks</option>
+          <option value="UPCOMING">Upcoming (Pending)</option>
+          <option value="OVERDUE">Overdue (Pending)</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+      </div>
+    </div>
+    <div id="taskList"></div>
+  </div>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('bnhs_shs_tasks')) || [];
+
+  function saveAndRender() {
+    localStorage.setItem('bnhs_shs_tasks', JSON.stringify(tasks));
+    updateSubjectFilter();
+    renderTasks();
+  }
+
+  function addTask() {
+    const title = document.getElementById('taskTitle').value.trim();
+    const subject = document.getElementById('taskSubject').value.trim();
+    const strand = document.getElementById('taskStrand').value;
+    const description = document.getElementById('taskDesc').value.trim();
+    const deadline = document.getElementById('taskDeadline').value;
+
+    if (!title || !subject || !deadline) {
+      alert("Please fill in the Task Title, Subject, and Submission Deadline.");
+      return;
+    }
+
+    tasks.push({
+      id: Date.now(),
+      title: title,
+      subject: subject,
+      strand: strand,
+      description: description,
+      deadline: deadline,
+      completed: false
+    });
+
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskSubject').value = '';
+    document.getElementById('taskDesc').value = '';
+    document.getElementById('taskDeadline').value = '';
+    saveAndRender();
+  }
+
+  function toggleStatus(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    saveAndRender();
+  }
+
+  function deleteTask(id) {
+    if (confirm("Are you sure you want to delete this task?")) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveAndRender();
+    }
+  }
+
+  function updateSubjectFilter() {
+    const filterSelect = document.getElementById('filterSubject');
+    const currentSelection = filterSelect.value;
+    const subjects = [...new Set(tasks.map(t => t.subject))].sort();
+
+    filterSelect.innerHTML = '<option value="ALL">All Subjects</option>';
+    subjects.forEach(subj => {
+      const opt = document.createElement('option');
+      opt.value = subj;
+      opt.textContent = subj;
+      filterSelect.appendChild(opt);
+    });
+
+  
