@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 14px;
+            padding: 12px 14px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
@@ -111,7 +111,7 @@
         <h2 style="margin:0;">Task Monitor</h2>
         <small style="color:#64748b;">Beleng National High School • SHS</small>
     </div>
-    <button class="notif-btn" onclick="enableNotifications()">🔔 Enable Alerts</button>
+    <button type="button" class="notif-btn" onclick="enableNotifications()">🔔 Enable Alerts</button>
 </header>
 
 <div class="stats">
@@ -135,24 +135,23 @@
             <option value="HE">HE</option>
         </select>
     </div>
-    <input type="text" id="taskTitle" placeholder="Task Title (e.g., Practical Research Ch. 1)" required>
-    <input type="text" id="taskSubject" placeholder="Subject (e.g., Empowerment Technologies)" required>
+    <input type="text" id="taskTitle" placeholder="Task Title (e.g., Practical Research Ch. 1)">
+    <input type="text" id="taskSubject" placeholder="Subject (e.g., Empowerment Technologies)">
     <textarea id="taskDesc" rows="2" placeholder="Task instructions or notes (optional)..."></textarea>
     <label style="font-size:0.85rem; font-weight:600;">Deadline Date & Time:</label>
-    <input type="datetime-local" id="taskDeadline" required>
-<button type="button" id="saveBtn" style="width:100%; margin-bottom:8px;" onclick="saveTask()">+ Save Task</button>
-<button type="button" id="cancelEditBtn" style="width:100%; background:#64748b; display:none;" onclick="resetForm()">Cancel</button>
-    
+    <input type="datetime-local" id="taskDeadline">
+    <button type="button" id="saveBtn" style="width:100%; margin-bottom:8px;" onclick="saveTask()">+ Save Task</button>
+    <button type="button" id="cancelEditBtn" style="width:100%; background:#64748b; display:none;" onclick="resetForm()">Cancel</button>
 </div>
 
 <div class="filters">
-    <button class="active" onclick="setFilter('all', this)">All</button>
-    <button onclick="setFilter('upcoming', this)">Upcoming</button>
-    <button onclick="setFilter('overdue', this)">Overdue</button>
-    <button onclick="setFilter('completed', this)">Completed</button>
-    <button onclick="setFilter('ICT', this)">ICT</button>
-    <button onclick="setFilter('HUMSS', this)">HUMSS</button>
-    <button onclick="setFilter('HE', this)">HE</button>
+    <button type="button" class="active" onclick="setFilter('all', this)">All</button>
+    <button type="button" onclick="setFilter('upcoming', this)">Upcoming</button>
+    <button type="button" onclick="setFilter('overdue', this)">Overdue</button>
+    <button type="button" onclick="setFilter('completed', this)">Completed</button>
+    <button type="button" onclick="setFilter('ICT', this)">ICT</button>
+    <button type="button" onclick="setFilter('HUMSS', this)">HUMSS</button>
+    <button type="button" onclick="setFilter('HE', this)">HE</button>
 </div>
 
 <div id="taskList"></div>
@@ -162,7 +161,7 @@
     let currentFilter = 'all';
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(() => console.log('SW Ready'));
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
     }
 
     function enableNotifications() {
@@ -180,13 +179,15 @@
     }
 
     function sendSystemNotification(title, body) {
-        if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, {
-                    body: body,
-                    tag: title
+        if (Notification.permission === "granted") {
+            try {
+                new Notification(title, { body: body });
+            } catch (e) {}
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, { body: body, tag: title });
                 });
-            });
+            }
         }
     }
 
@@ -241,14 +242,11 @@
 
         document.getElementById('formHeader').innerText = 'Edit Academic Task';
         document.getElementById('saveBtn').innerText = 'Update Task';
-        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('cancelEditBtn').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function resetForm() {
         document.getElementById('editTaskId').value = '';
-        document.getElementById('taskTitle').value = '';
-        document.getElementById('taskSubject').value = '';
-        document.getElementById('taskDesc').value = '';
-        document.getElementById('taskDeadline').value = '';
     
+
