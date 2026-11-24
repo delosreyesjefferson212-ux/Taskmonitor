@@ -129,7 +129,7 @@
 
   <div class="notif-banner" id="notifBar">
     <span>🔔 I-on ang notifications para sa lockscreen alerts.</span>
-    <button class="btn-notif" onclick="requestNotifPermission()">Enable Alerts</button>
+    <button type="button" class="btn-notif" id="enableBtn">Enable Alerts</button>
   </div>
 
   <div class="card">
@@ -164,13 +164,13 @@
   </div>
 
   <div class="filters">
-    <select id="filterStatus" onchange="renderTasks()">
+    <select id="filterStatus">
       <option value="ALL">All Tasks</option>
       <option value="UPCOMING">Upcoming (Pending)</option>
       <option value="OVERDUE">Overdue</option>
       <option value="COMPLETED">Completed</option>
     </select>
-    <input type="text" id="searchSubject" placeholder="Filter by Subject..." onkeyup="renderTasks()">
+    <input type="text" id="searchSubject" placeholder="Filter by Subject...">
   </div>
 
   <div id="taskList"></div>
@@ -179,30 +179,38 @@
 <script>
   let tasks = JSON.parse(localStorage.getItem('shsTasks')) || [];
 
-  if ('serviceWorker' in navigator) {
-    const swCode = `
-      self.addEventListener('install', () => self.skipWaiting());
-      self.addEventListener('activate', () => self.clients.claim());
-    `;
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+  function playAlertSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
   }
 
   function updateNotifBanner() {
     const bar = document.getElementById('notifBar');
     if (!('Notification' in window)) {
-      bar.innerHTML = '<span>⚠️ Buksan sa Chrome/Safari browser para gumana ang alerts.</span>';
-    } else if (Notification.permission === 'granted') {
-      bar.innerHTML = '<span>✅ Naka-on na ang Lockscreen & Status Bar Alerts.</span><button class="btn-notif" onclick="testNotification()">Test Alert</button>';
+      bar.innerHTML = '<span>⚠️ Buksan ang link sa Google Chrome para sa lockscreen alerts.</span>';
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      bar.innerHTML = '<span>✅ Naka-on na ang Lockscreen & Status Bar Alerts.</span><button type="button" class="btn-notif" id="testBtn">Test Alert</button>';
+      document.getElementById('testBtn').addEventListener('click', function() {
+        sendSystemNotification('Test Deadline Alert', 'Ganito lalabas ang reminder sa notification bar at lockscreen mo.');
+      });
+    } else if (Notification.permission === 'denied') {
+      bar.innerHTML = '<span>🚫 Naka-block ang notifications. I-allow ito sa Chrome Site Settings.</span>';
+    } else {
+      document.getElementById('enableBtn').addEventListener('click', requestNotifPermission);
     }
   }
 
   function requestNotifPermission() {
-    if (!('Notification' in window)) {
-      alert('Hindi suportado ng browser na ito ang notifications.');
-      return;
-    }
-    Notification.requestPermission().then(permission => {
+    Notification.requestPermission().then(function(permission) {
       updateNotifBanner();
       if (permission === 'granted') {
         sendSystemNotification('Alerts Enabled!', 'Makakatanggap ka na ng notification pagsapit ng deadline.');
@@ -210,37 +218,30 @@
     });
   }
 
-  function testNotification() {
-    sendSystemNotification('Test Deadline Alert', 'Ganito lalabas ang reminder sa notification bar at lockscreen mo.');
-  }
-
   function sendSystemNotification(title, body) {
-    if (Notification.permission === 'granted') {
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, {
-            body: body,
-            vibrate:,
-            tag: 'task-deadline'
-          });
-        });
-      } else {
+    playAlertSound();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
         new Notification(title, { body: body });
+      } catch (e) {
+        alert(title + '\n' + body);
       }
+    } else {
+      alert(title + '\n' + body);
     }
   }
 
-  setInterval(() => {
+  setInterval(function() {
     const now = new Date();
     let updated = false;
 
-    tasks.forEach(task => {
+    tasks.forEach(function(task) {
       if (!task.completed && !task.notified) {
         const dueDate = new Date(task.deadline);
-        if (now >= dueDate) {
+        if (!isNaN(dueDate) && now >= dueDate) {
           sendSystemNotification(
-            `⏰ Deadline Reached: ${task.title}`,
-            `Subject: ${task.subject} (${task.strand}) - Due now!`
+            '⏰ Deadline Reached: ' + task.title,
+            'Subject: ' + task.subject + ' (' + task.strand + ') - Due now!'
           );
           task.notified = true;
           updated = true;
@@ -252,7 +253,7 @@
       localStorage.setItem('shsTasks', JSON.stringify(tasks));
       renderTasks();
     }
-  }, 15000);
+  }, 10000);
 
   document.getElementById('taskForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -271,17 +272,21 @@
     tasks.push(newTask);
     saveAndRender();
     this.reset();
-    alert('Task saved with deadline alert!');
+    alert('Task saved successfully!');
   });
 
   function toggleStatus(id) {
-    tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
+    tasks = tasks.map(function(task) {
+      return task.id === id ? Object.assign({}, task, { completed: !task.completed }) : task;
+    });
     saveAndRender();
   }
 
   function deleteTask(id) {
     if (confirm('Delete this task?')) {
-      tasks = tasks.filter(task => task.id !== id);
+      tasks = tasks.filter(function(task) {
+        return task.id !== id;
+      });
       saveAndRender();
     }
   }
@@ -308,7 +313,7 @@
 
     taskList.innerHTML = '';
 
-    const filtered = tasks.filter(task => {
+    const filtered = tasks.filter(function(task) {
       const isOverdue = !task.completed && new Date(task.deadline) < now;
       const matchesSubject = task.subject.toLowerCase().includes(searchSubject);
 
@@ -319,10 +324,4 @@
       return true;
     });
 
-    if (filtered.length === 0) {
-      taskList.innerHTML = '<p style="text-align:center; color:#64748b;">No academic tasks found.</p>';
-      return;
-    }
-
-    filtered.forEach(task => {
   
