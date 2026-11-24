@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Task & Deadline Monitoring System</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --success: #16a34a;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+    }
+    .container { max-width: 800px; margin: auto; }
+    header { text-align: center; margin-bottom: 20px; }
+    .card {
+      background: var(--card);
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      margin-bottom: 18px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .full-width { grid-column: span 2; }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button.btn-save {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .task-item {
+      border-left: 5px solid var(--primary);
+      padding: 14px;
+      background: var(--card);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .task-item.overdue { border-left-color: var(--danger); }
+    .task-item.completed { border-left-color: var(--success); opacity: 0.75; }
+    .badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: bold;
+      color: white;
+    }
+    .bg-upcoming { background-color: var(--warning); }
+    .bg-overdue { background-color: var(--danger); }
+    .bg-completed { background-color: var(--success); }
+    .actions button {
+      width: auto;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h2>Academic Task & Deadline Monitoring System</h2>
+    <p>Beleng National High School - Senior High School</p>
+  </header>
+
+  <div class="card">
+    <h3>Add New Academic Task</h3>
+    <form id="taskForm" class="form-grid">
+      <input type="text" id="taskTitle" placeholder="Task Title (e.g., Research Chapter 1)" required>
+      <input type="text" id="subject" placeholder="Subject (e.g., Practical Research 2)" required>
+      <input type="date" id="deadline" required>
+      <select id="strand">
+        <option value="ICT">ICT Strand</option>
+        <option value="HUMSS">HUMSS Strand</option>
+        <option value="HE">HE Strand</option>
+      </select>
+      <textarea id="description" class="full-width" rows="2" placeholder="Task Description / Instructions..."></textarea>
+      <button type="submit" class="btn-save full-width">Save Task</button>
+    </form>
+  </div>
+
+  <div class="filters">
+    <select id="filterStatus" onchange="renderTasks()">
+      <option value="ALL">All Tasks</option>
+      <option value="UPCOMING">Upcoming (Pending)</option>
+      <option value="OVERDUE">Overdue</option>
+      <option value="COMPLETED">Completed</option>
+    </select>
+    <input type="text" id="searchSubject" placeholder="Filter by Subject..." onkeyup="renderTasks()">
+  </div>
+
+  <div id="taskList"></div>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('shsTasks')) || [];
+
+  document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const newTask = {
+      id: Date.now(),
+      title: document.getElementById('taskTitle').value,
+      subject: document.getElementById('subject').value,
+      deadline: document.getElementById('deadline').value,
+      strand: document.getElementById('strand').value,
+      description: document.getElementById('description').value,
+      completed: false
+    };
+
+    tasks.push(newTask);
+    saveAndRender();
+    this.reset();
+    alert('Task saved successfully!');
+  });
+
+  function toggleStatus(id) {
+    tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
+    saveAndRender();
+  }
+
+  function deleteTask(id) {
+    if (confirm('Delete this task?')) {
+      tasks = tasks.filter(task => task.id !== id);
+      saveAndRender();
+    }
+  }
+
+  function saveAndRender() {
+    localStorage.setItem('shsTasks', JSON.stringify(tasks));
+    renderTasks();
+  }
+
+  function renderTasks() {
+    const taskList = document.getElementById('taskList');
+    const filterStatus = document.getElementById('filterStatus').value;
+    const searchSubject = document.getElementById('searchSubject').value.toLowerCase();
+    const today = new Date().toISOString().split('T')[0];
+
+    taskList.innerHTML = '';
+
+    const filtered = tasks.filter(task => {
+      const isOverdue = !task.completed && task.deadline < today;
+      const matchesSubject = task.subject.toLowerCase().includes(searchSubject);
+
+      if (!matchesSubject) return false;
+      if (filterStatus === 'COMPLETED') return task.completed;
+      if (filterStatus === 'OVERDUE') return isOverdue;
+      if (filterStatus === 'UPCOMING') return !task.completed && !isOverdue;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      taskList.innerHTML = '<p style="text-align:center; color:#64748b;">No academic tasks found.</p>';
+      return;
+    }
+
+    filtered.forEach(task => {
+      const isOverdue = !task.completed && task.deadline < today;
+      let statusLabel = 'Upcoming';
+      let badgeClass = 'bg-upcoming';
+      let itemClass = '';
+
+      if (task.completed) {
+        statusLabel = 'Completed';
+        badgeClass = 'bg-completed';
+        itemClass = 'completed';
+      } else if (isOverdue) {
+        statusLabel = 'Overdue';
+        badgeClass = 'bg-overdue';
+        itemClass = 'overdue';
+      }
+
+      taskList.innerHTML += `
+        <div class="task-item ${itemClass}">
+          <div>
+            <strong>${task.title}</strong> <span class="badge ${badgeClass}">${statusLabel}</span>
+            <div style="font-size:13px; color:#475569; margin-top:4px;">
+              Subject: <b>${task.subject}</b> (${task.strand}) | Due: <b>${task.deadline}</b>
+            </div>
+            <p style="font-size:13px; margin:6px 0 0;">${task.description}</p>
+          </div>
+          <div class="actions">
+            <button onclick="toggleStatus(${task.id})" style="background:#e2e8f0; border:none;">
+              ${task.completed ? 'Mark Pending' : 'Mark Completed'}
+            </button>
+            <button onclick="deleteTask(${task.id})" style="background:#fee2e2; color:#dc2626; border:none;">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  renderTasks();
+</script>
+
+</body>
+  </html>
+        
