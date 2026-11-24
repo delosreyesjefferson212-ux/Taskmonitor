@@ -248,5 +248,161 @@
 
     function resetForm() {
         document.getElementById('editTaskId').value = '';
-    
+    <script>
+    let tasks = JSON.parse(localStorage.getItem('shs_tasks')) || [];
+    let currentFilter = 'all';
+
+    function enableNotifications() {
+        if (!("Notification" in window)) return alert("Not supported");
+        Notification.requestPermission().then(p => {
+            if (p === "granted") sendSystemNotification("Alerts Enabled!", "Deadline alerts are now active.");
+        });
+    }
+
+    function sendSystemNotification(title, body) {
+        if (Notification.permission === "granted") {
+            try { new Notification(title, { body: body }); } catch (e) {}
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(r => r.showNotification(title, { body: body, tag: title }));
+            }
+        }
+    }
+
+    function saveTask() {
+        const editId = document.getElementById('editTaskId').value;
+        const grade = document.getElementById('taskGrade').value;
+        const strand = document.getElementById('taskStrand').value;
+        const title = document.getElementById('taskTitle').value.trim();
+        const subject = document.getElementById('taskSubject').value.trim();
+        const desc = document.getElementById('taskDesc').value.trim();
+        const deadline = document.getElementById('taskDeadline').value;
+
+        if (!title || !subject || !deadline) {
+            alert("Pakilagyan ang Task Title, Subject, at Deadline Date & Time!");
+            return;
+        }
+
+        if (editId) {
+            tasks = tasks.map(t => t.id == editId ? { ...t, grade, strand, title, subject, desc, deadline, notifiedUpcoming: false, notifiedOverdue: false } : t);
+        } else {
+            tasks.push({ id: Date.now(), grade, strand, title, subject, desc, deadline, completed: false, notifiedUpcoming: false, notifiedOverdue: false });
+        }
+
+        resetForm();
+        saveAndRender();
+    }
+
+    function editTask(id) {
+        const t = tasks.find(x => x.id === id);
+        if (!t) return;
+        document.getElementById('editTaskId').value = t.id;
+        document.getElementById('taskGrade').value = t.grade || 'Grade 11';
+        document.getElementById('taskStrand').value = t.strand || 'ICT';
+        document.getElementById('taskTitle').value = t.title;
+        document.getElementById('taskSubject').value = t.subject;
+        document.getElementById('taskDesc').value = t.desc;
+        document.getElementById('taskDeadline').value = t.deadline;
+        document.getElementById('formHeader').innerText = 'Edit Academic Task';
+        document.getElementById('saveBtn').innerText = 'Update Task';
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+        document.getElementById('editTaskId').value = '';
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskSubject').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskDeadline').value = '';
+        document.getElementById('formHeader').innerText = 'Add Academic Task';
+        document.getElementById('saveBtn').innerText = '+ Save Task';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+    }
+
+    function toggleComplete(id) {
+        tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        saveAndRender();
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveAndRender();
+    }
+
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTasks();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('shs_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    function checkDeadlines() {
+        const now = new Date();
+        let updated = false;
+        tasks.forEach(t => {
+            if (t.completed) return;
+            const due = new Date(t.deadline);
+            const hrs = (due - now) / 3600000;
+            if (hrs < 0 && !t.notifiedOverdue) {
+                sendSystemNotification(`⚠️ OVERDUE [${t.strand}]: ${t.subject}`, `"${t.title}" was due on ${due.toLocaleString()}.`);
+                t.notifiedOverdue = true; updated = true;
+            } else if (hrs > 0 && hrs <= 24 && !t.notifiedUpcoming) {
+                sendSystemNotification(`⏰ Upcoming [${t.strand}]: ${t.subject}`, `"${t.title}" is due in less than 24 hours!`);
+                t.notifiedUpcoming = true; updated = true;
+            }
+        });
+        if (updated) saveAndRender();
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        const now = new Date();
+        let up = 0, ov = 0, dn = 0;
+        tasks.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        tasks.forEach(t => {
+            const due = new Date(t.deadline);
+            const isOver = !t.completed && due < now;
+            const st = t.completed ? 'completed' : (isOver ? 'overdue' : 'upcoming');
+            const lbl = t.completed ? 'Completed' : (isOver ? 'Overdue' : 'Upcoming');
+            if (t.completed) dn++; else if (isOver) ov++; else up++;
+            if (currentFilter !== 'all') {
+                if (['ICT', 'HUMSS', 'HE'].includes(currentFilter)) { if (t.strand !== currentFilter) return; }
+                else if (currentFilter !== st) return;
+            }
+            list.innerHTML += `
+                <div class="task-item ${st}">
+                    <div>
+                        <span class="badge ${st}">${lbl}</span>
+                        <span class="badge strand">${t.grade} • ${t.strand}</span>
+                        <strong style="display:block; margin-top:6px;">[${t.subject}] ${t.title}</strong>
+                        <small style="color:#475569; display:block;">${t.desc}</small>
+                        <small style="color:#64748b; display:block;">Due: ${due.toLocaleString()}</small>
+                    </div>
+                    <div class="actions">
+                        <button type="button" onclick="toggleComplete(${t.id})" style="background:${t.completed ? '#64748b' : '#16a34a'};">${t.completed ? 'Undo' : '✓ Done'}</button>
+                        <button type="button" onclick="editTask(${t.id})" style="background:#0284c7;">Edit</button>
+                        <button type="button" onclick="deleteTask(${t.id})" style="background:#ef4444;">Delete</button>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('countAll').innerText = tasks.length;
+        document.getElementById('countUpcoming').innerText = up;
+        document.getElementById('countOverdue').innerText = ov;
+        document.getElementById('countCompleted').innerText = dn;
+    }
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    setInterval(checkDeadlines, 30000);
+    renderTasks();
+    checkDeadlines();
+</script>
+</body>
+</html>
+
 
