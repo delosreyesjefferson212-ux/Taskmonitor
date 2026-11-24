@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHS Academic Task & Deadline Monitor</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --success: #16a34a;
+            --bg: #f8fafc;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button.notif-btn { background: #0f172a; font-size: 0.85rem; }
+        .card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .task-item {
+            border-left: 5px solid var(--primary);
+            padding: 12px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-item.overdue { border-left-color: var(--danger); background: #fef2f2; }
+        .task-item.upcoming { border-left-color: var(--warning); }
+        .task-item.completed { border-left-color: var(--success); opacity: 0.7; }
+        .badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge.overdue { background: #fee2e2; color: var(--danger); }
+        .badge.upcoming { background: #fef3c7; color: var(--warning); }
+        .badge.completed { background: #dcfce7; color: var(--success); }
+        .filters { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+        .filters button { background: #e2e8f0; color: #334155; font-size: 0.85rem; }
+        .filters button.active { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h2 style="margin:0;">Task Monitor</h2>
+        <small style="color:#64748b;">Beleng National High School</small>
+    </div>
+    <button class="notif-btn" onclick="enableNotifications()">🔔 Enable Alerts</button>
+</header>
+
+<div class="card">
+    <h3 style="margin-top:0;">Add Academic Task</h3>
+    <input type="text" id="taskTitle" placeholder="Task Title (e.g., Research Chapter 1)" required>
+    <input type="text" id="taskSubject" placeholder="Subject (e.g., Practical Research 2, ICT, HUMSS)" required>
+    <textarea id="taskDesc" rows="2" placeholder="Task description or instructions..."></textarea>
+    <label style="font-size:0.85rem; font-weight:600;">Deadline Date & Time:</label>
+    <input type="datetime-local" id="taskDeadline" required>
+    <button style="width:100%;" onclick="addTask()">+ Save Task</button>
+</div>
+
+<div class="filters">
+    <button class="active" onclick="setFilter('all', this)">All</button>
+    <button onclick="setFilter('upcoming', this)">Upcoming</button>
+    <button onclick="setFilter('overdue', this)">Overdue</button>
+    <button onclick="setFilter('completed', this)">Completed</button>
+</div>
+
+<div id="taskList"></div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem('shs_tasks')) || [];
+    let currentFilter = 'all';
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log('Service Worker Registered'));
+    }
+
+    function enableNotifications() {
+        if (!("Notification" in window)) {
+            alert("This browser does not support notifications.");
+            return;
+        }
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                sendSystemNotification("Alerts Enabled!", "You will now receive lock screen alerts for upcoming and overdue deadlines.");
+            } else {
+                alert("Please allow notifications in your browser settings to receive deadline alerts.");
+            }
+        });
+    }
+
+    function sendSystemNotification(title, body) {
+        if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: 'https://flaticon.com',
+                    vibrate:,
+                    tag: title
+                });
+            });
+        }
+    }
+
+    function addTask() {
+        const title = document.getElementById('taskTitle').value.trim();
+        const subject = document.getElementById('taskSubject').value.trim();
+        const desc = document.getElementById('taskDesc').value.trim();
+        const deadline = document.getElementById('taskDeadline').value;
+
+        if (!title || !subject || !deadline) {
+            alert("Please fill in the Title, Subject, and Deadline.");
+            return;
+        }
+
+        tasks.push({
+            id: Date.now(),
+            title,
+            subject,
+            desc,
+            deadline,
+            completed: false,
+            notifiedUpcoming: false,
+            notifiedOverdue: false
+        });
+
+        saveAndRender();
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskSubject').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskDeadline').value = '';
+    }
+
+    function toggleComplete(id) {
+        tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        saveAndRender();
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveAndRender();
+    }
+
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTasks();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('shs_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    function checkDeadlines() {
+        const now = new Date();
+        let updated = false;
+
+        tasks.forEach(task => {
+            if (task.completed) return;
+
+            const due = new Date(task.deadline);
+            const hoursLeft = (due - now) / (1000 * 60 * 60);
+
+            if (hoursLeft < 0 && !task.notifiedOverdue) {
+                sendSystemNotification(
+                    `⚠️ OVERDUE: ${task.subject}`,
+                    `"${task.title}" was due on ${due.toLocaleString()}.`
+                );
+                task.notifiedOverdue = true;
+                updated = true;
+            } 
+            else if (hoursLeft > 0 && hoursLeft <= 24 && !task.notifiedUpcoming) {
+                sendSystemNotification(
+                    `⏰ Deadline Approaching: ${task.subject}`,
+                    `"${task.title}" is due in less than 24 hours!`
+                );
+                task.notifiedUpcoming = true;
+                updated = true;
+            }
+        });
+
+        if (updated) saveAndRender();
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        const now = new Date();
+
+        tasks.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+        tasks.forEach(task => {
+            const due = new Date(task.deadline);
+            const isOverdue = !task.completed && due < now;
+            const statusClass = task.completed ? 'completed' : (isOverdue ? 'overdue' : 'upcoming');
+            const statusText = task.completed ? 'Completed' : (isOverdue ? 'Overdue' : 'Pending / Upcoming');
+
+            if (currentFilter !== 'all' && currentFilter !== statusClass) return;
+
+            list.innerHTML += `
+                <div class="task-item ${statusClass}">
+                    <div>
+                        <span class="badge ${statusClass}">${statusText}</span>
+                        <strong style="display:block; margin-top:4px;">[${task.subject}] ${task.title}</strong>
+                        <small style="color:#475569; display:block;">${task.desc}</small>
+                        <small style="color:#64748b;">Due: ${due.toLocaleString()}</small>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <button onclick="toggleComplete(${task.id})" style="background:${task.completed ? '#64748b' : '#16a34a'}; font-size:0.8rem;">
+                            ${task.completed ? 'Undo' : '✓ Done'}
+                        </button>
+                        <button onclick="deleteTask(${task.id})" style="background:#ef4444; font-size:0.8rem;">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    setInterval(checkDeadlines, 30000);
+    renderTasks();
+    checkDeadlines();
+</script>
+
+</body>
+  </html>
+  
