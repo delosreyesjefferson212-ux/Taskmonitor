@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Task & Deadline Monitoring System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding-bottom: 3rem;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Summary Dashboard Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .stat-card h3 {
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-overdue h3 { color: var(--danger); }
+        .stat-upcoming h3 { color: var(--warning); }
+        .stat-completed h3 { color: var(--success); }
+
+        /* Task Input Form */
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        input, select, textarea {
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button.btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 1rem;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button.btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        .filters select {
+            width: auto;
+            min-width: 160px;
+            background: white;
+        }
+
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .task-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .task-item.overdue {
+            border-left-color: var(--danger);
+            background-color: var(--danger-bg);
+        }
+
+        .task-item.upcoming {
+            border-left-color: var(--warning);
+        }
+
+        .task-item.completed {
+            border-left-color: var(--success);
+            opacity: 0.75;
+        }
+
+        .task-info {
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.35rem;
+        }
+
+        .subject-badge {
+            background: #e0e7ff;
+            color: #1e40af;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .badge-overdue { background: #fee2e2; color: var(--danger); }
+        .badge-upcoming { background: #fef3c7; color: var(--warning); }
+        .badge-completed { background: #dcfce7; color: var(--success); }
+
+        .task-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+        }
+
+        .task-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .task-deadline {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-sm {
+            padding: 0.45rem 0.75rem;
+            font-size: 0.85rem;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-weight: 600;
+            background: white;
+        }
+
+        .btn-complete {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn-complete:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-delete {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            background: white;
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .filters select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Academic Task & Deadline Monitor</h1>
+    <p>Beleng National High School • Senior High School Task Tracker</p>
+</header>
+
+<div class="container">
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3 id="totalCount">0</h3>
+            <span>Total Tasks</span>
+        </div>
+        <div class="stat-card stat-upcoming">
+            <h3 id="upcomingCount">0</h3>
+            <span>Upcoming</span>
+        </div>
+        <div class="stat-card stat-overdue">
+            <h3 id="overdueCount">0</h3>
+            <span>Overdue</span>
+        </div>
+        <div class="stat-card stat-completed">
+            <h3 id="completedCount">0</h3>
+            <span>Completed</span>
+        </div>
+    </div>
+
+    <!-- Add Academic Task Form -->
+    <div class="card">
+        <h2>Record New Academic Task</h2>
+        <form id="taskForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="taskTitle">Task Title *</label>
+                    <input type="text" id="taskTitle" placeholder="e.g., Research Chapter 1 Draft" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskSubject">Subject *</label>
+                    <input type="text" id="taskSubject" list="subjectSuggestions" placeholder="e.g., Practical Research 2" required>
+                    <datalist id="subjectSuggestions">
+                        <option value="Practical Research 2">
+                        <option value="Empowerment Technologies">
+                        <option value="Media and Information Literacy">
+                        <option value="21st Century Literature">
+                        <option value="Understanding Culture, Society and Politics">
+                        <option value="Computer Systems Servicing (ICT)">
+          
